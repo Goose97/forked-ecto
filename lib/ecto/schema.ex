@@ -110,7 +110,7 @@ defmodule Ecto.Schema do
       a tuple `{field_name, type, options}` with the primary key field
       name, type (typically `:id` or `:binary_id`, but can be any type) and
       options. It also accepts `false` to disable the generation of a primary
-      key field. Defaults to `{:id, :id, autogenerate: true}`. 
+      key field. Defaults to `{:id, :id, autogenerate: true}`.
 
     * `@schema_prefix` - configures the schema prefix. Defaults to `nil`,
       which generates structs and queries without prefix. When set, the
@@ -191,13 +191,13 @@ defmodule Ecto.Schema do
   module attribute and using `primary_key: true` as option for `field/3` in
   your schema definition. They are not mutually exclusive and can be used
   together.
-  
+
   Using `@primary_key` should be prefered for single field primary keys and
   sharing primary key definitions between multiple schemas using macros.
 
   Ecto also supports composite primary keys, which is where you need to use
-  `primary_key: true` for the fields in your schema. This usually goes along 
-  with setting `@primary_key false` to disable generation of additional 
+  `primary_key: true` for the fields in your schema. This usually goes along
+  with setting `@primary_key false` to disable generation of additional
   primary key fields.
 
   Besides `:id` and `:binary_id`, which are often used by primary
@@ -1350,6 +1350,8 @@ defmodule Ecto.Schema do
   """
   defmacro many_to_many(name, queryable, opts \\ []) do
     queryable = expand_alias(queryable, __CALLER__)
+    opts = expand_alias_in_key(opts, :join_through, __CALLER__)
+
     quote do
       Ecto.Schema.__many_to_many__(__MODULE__, unquote(name), unquote(queryable), unquote(opts))
     end
@@ -2075,4 +2077,12 @@ defmodule Ecto.Schema do
     do: Macro.expand(ast, %{env | function: {:__schema__, 2}})
   defp expand_alias(ast, _env),
     do: ast
+
+  defp expand_alias_in_key(opts, key, env) do
+    if is_list(opts) and Keyword.has_key?(opts, key) do
+      Keyword.update!(opts, key, &expand_alias(&1, env))
+    else
+      opts
+    end
+  end
 end
